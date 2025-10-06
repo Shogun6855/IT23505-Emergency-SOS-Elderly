@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useSocket } from '../../context/SocketContext';
 import { useActiveUsers } from '../../hooks/useActiveUsers';
-import { emergencyAPI } from '../../services/api';
+import { emergencyAPI, userAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import MedicationOverview from './MedicationOverview';
 
 const CaregiverDashboard = () => {
   const { user, logout } = useAuth();
@@ -11,6 +12,8 @@ const CaregiverDashboard = () => {
   const { activeUsers, loading } = useActiveUsers();
   const [activeEmergencies, setActiveEmergencies] = useState([]);
   const [emergenciesLoading, setEmergenciesLoading] = useState(true);
+  const [elders, setElders] = useState([]);
+  const [activeTab, setActiveTab] = useState('emergencies');
   const toast = useToast();
 
   // Fetch active emergencies
@@ -30,6 +33,18 @@ const CaregiverDashboard = () => {
     }
   };
 
+  // Fetch assigned elders
+  const fetchElders = async () => {
+    try {
+      const response = await userAPI.getElders();
+      if (response.data.success) {
+        setElders(response.data.elders);
+      }
+    } catch (error) {
+      console.error('Failed to fetch elders:', error);
+    }
+  };
+
   // Handle emergency resolution
   const handleResolveEmergency = async (emergencyId) => {
     try {
@@ -45,9 +60,10 @@ const CaregiverDashboard = () => {
     }
   };
 
-  // Load active emergencies on component mount
+  // Load active emergencies and elders on component mount
   useEffect(() => {
     fetchActiveEmergencies();
+    fetchElders();
   }, []);
 
   // Listen for new emergency alerts via socket
@@ -102,8 +118,37 @@ const CaregiverDashboard = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          {/* Active Emergencies */}
-          <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
+          {/* Navigation Tabs */}
+          <div className="border-b border-gray-200 mb-6">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('emergencies')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'emergencies'
+                    ? 'border-red-500 text-red-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                🚨 Active Emergencies
+              </button>
+              <button
+                onClick={() => setActiveTab('medications')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'medications'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                💊 Medication Monitoring
+              </button>
+            </nav>
+          </div>
+
+          {/* Tab Content */}
+          {activeTab === 'emergencies' && (
+            <>
+              {/* Active Emergencies */}
+              <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
             <div className="px-4 py-5 sm:p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
@@ -318,6 +363,13 @@ const CaregiverDashboard = () => {
               </li>
             </ul>
           </div>
+            </>
+          )}
+
+          {/* Medications Tab */}
+          {activeTab === 'medications' && (
+            <MedicationOverview elders={elders} />
+          )}
         </div>
       </main>
     </div>

@@ -4,6 +4,8 @@ import { useSocket } from '../../context/SocketContext';
 import { useActiveUsers } from '../../hooks/useActiveUsers';
 import { emergencyAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import MedicationManagement from './MedicationManagement';
+import MedicationNotifications from './MedicationNotifications';
 
 const ElderDashboard = () => {
   const { user, logout } = useAuth();
@@ -11,6 +13,7 @@ const ElderDashboard = () => {
   const { activeUsers, loading } = useActiveUsers();
   const toast = useToast();
   const [emergencyInProgress, setEmergencyInProgress] = useState(false);
+  const [activeTab, setActiveTab] = useState('emergency');
 
   const handleEmergencyTrigger = async () => {
     if (emergencyInProgress) return;
@@ -102,8 +105,37 @@ const ElderDashboard = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          {/* Emergency Section */}
-          <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
+          {/* Navigation Tabs */}
+          <div className="border-b border-gray-200 mb-6">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('emergency')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'emergency'
+                    ? 'border-red-500 text-red-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                🚨 Emergency SOS
+              </button>
+              <button
+                onClick={() => setActiveTab('medications')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'medications'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                💊 Medications
+              </button>
+            </nav>
+          </div>
+
+          {/* Tab Content */}
+          {activeTab === 'emergency' && (
+            <>
+              {/* Emergency Section */}
+              <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
             <div className="px-4 py-5 sm:p-6">
               <div className="text-center">
                 <h2 className="text-3xl font-bold text-gray-900 mb-6">
@@ -262,8 +294,18 @@ const ElderDashboard = () => {
               </li>
             </ul>
           </div>
+            </>
+          )}
+
+          {/* Medications Tab */}
+          {activeTab === 'medications' && (
+            <MedicationManagement />
+          )}
         </div>
       </main>
+      
+      {/* Medication Notifications */}
+      <MedicationNotifications />
     </div>
   );
 };

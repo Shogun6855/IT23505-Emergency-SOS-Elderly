@@ -59,3 +59,14 @@ export const userAPI = {
   removeCaregiver: (caregiverId) => api.delete(`/users/caregivers/${caregiverId}`),
   getElders: () => api.get('/users/elders'),
 };
+
+// Medication API functions
+export const medicationAPI = {
+  addMedication: (medicationData) => api.post('/medications', medicationData),
+  getUserMedications: () => api.get('/medications'),
+  updateMedication: (id, medicationData) => api.put(`/medications/${id}`, medicationData),
+  deleteMedication: (id) => api.delete(`/medications/${id}`),
+  getTodaysMedications: () => api.get('/medications/today'),
+  markMedicationTaken: (logId, notes) => api.put(`/medications/logs/${logId}/taken`, { notes }),
+  markMedicationMissed: (logId, notes) => api.put(`/medications/logs/${logId}/missed`, { notes }),
+};
