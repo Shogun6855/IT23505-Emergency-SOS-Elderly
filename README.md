@@ -13,7 +13,8 @@ Think of this as a digital panic button for seniors. When they're in trouble, th
 - 👥 **Multiple Caregivers** - Family, friends, neighbors all get notified
 - 🗺️ **Location Sharing** - Shows exactly where help is needed
 - 💬 **Live Updates** - See who's online and available to help
-- 📋 **Simple Dashboard** - Easy to use for all ages
+- � **Medication Reminders** - Never miss important medications again
+- �📋 **Simple Dashboard** - Easy to use for all ages
 
 ## Tech Stack
 
@@ -27,6 +28,7 @@ Think of this as a digital panic button for seniors. When they're in trouble, th
 - Express.js - Web application framework
 - Socket.io - Real-time bidirectional communication
 - JSON Web Tokens (JWT) - Authentication
+- Node-cron - Scheduled medication reminders
 
 **Database**
 - PostgreSQL - Primary database
@@ -39,10 +41,11 @@ Think of this as a digital panic button for seniors. When they're in trouble, th
 
 ## How It Works
 
-1. **Elders** get a simple dashboard with a large SOS button
-2. **Caregivers** see who needs help and can respond instantly  
-3. **Everyone** stays connected through real-time updates
+1. **Elders** get a simple dashboard with a large SOS button and medication tracking
+2. **Caregivers** see who needs help and monitor medication compliance
+3. **Everyone** stays connected through real-time updates and health notifications
 4. **Emergencies** are tracked and can be marked as resolved
+5. **Medications** are scheduled with automatic reminders and missed dose alerts
 
 ## Getting Started
 
@@ -77,14 +80,56 @@ docker-compose up
 ```
 That's it! Everything runs automatically.
 
+## 💊 Medication Reminders Feature
+
+### What It Does
+Our medication reminder system helps elders stay on top of their health by:
+
+- **Smart Scheduling**: Set up daily, twice daily, or custom medication schedules
+- **15-Minute Advance Warnings**: Get reminded before it's time to take medicine
+- **One-Tap Confirmation**: Easy "Take" or "Miss" buttons on notifications
+- **Caregiver Alerts**: Family gets notified if medications are missed
+- **Automatic Tracking**: System tracks adherence patterns and missed doses
+- **Flexible Timing**: Support for complex medication schedules
+
+### How to Use
+
+**For Elders:**
+1. Click the "💊 Medications" tab on your dashboard
+2. Add medications with name, dosage, and time schedule
+3. Get reminded 15 minutes before each dose
+4. Tap "Take" when you've taken your medicine
+5. View your daily medication schedule
+
+**For Caregivers:**
+1. Switch to "💊 Medication Monitoring" tab
+2. See real-time alerts when elders miss medications
+3. Monitor adherence patterns and health trends
+4. Get instant notifications about medication compliance
+
+### Technical Features
+- **Real-time notifications** via Socket.io
+- **Automatic missed detection** after 30 minutes
+- **Daily schedule generation** for the next 7 days
+- **Database tracking** of all medication events
+- **REST API** for medication management
+- **Cron-based reminders** running every minute
+
 ## Project Structure
 
 ```
 emergency-sos-elders/
 ├── frontend/          # React web app (what users see)
+│   ├── components/
+│   │   ├── Elder/     # Elder dashboard with SOS & medication management
+│   │   └── Caregiver/ # Caregiver monitoring and alerts
 ├── backend/           # Node.js server (handles data)
+│   ├── controllers/   # API logic including medication controller
+│   ├── services/      # Background services (medication reminders)
+│   └── routes/        # API endpoints including medication routes
 ├── mobile/            # Mobile app (bonus feature)
 ├── database/          # Database setup and migrations
+│   └── migrations/    # Including medication tables (005_create_medications_table.sql)
 └── docs/             # Additional documentation
 ```
 
@@ -94,6 +139,7 @@ emergency-sos-elders/
 - **Backend**: Node.js with Express (handles the logic)
 - **Database**: PostgreSQL (stores user data safely)
 - **Real-time**: Socket.io (instant notifications)
+- **Scheduling**: Node-cron (automated medication reminders)
 - **Styling**: Tailwind CSS (modern, responsive design)
 
 ## Demo Accounts
@@ -103,10 +149,12 @@ For testing purposes:
 **Elder Account:**
 - Email: elder@demo.com
 - Password: demo123
+- Features: SOS button, medication management, reminders
 
 **Caregiver Account:** 
 - Email: caregiver@demo.com  
 - Password: demo123
+- Features: Emergency monitoring, medication oversight, real-time alerts
 
 ## Screenshots
 
@@ -151,15 +199,18 @@ For testing purposes:
 - 🗺️ Location tracking is simulated
 - 🔒 Basic security (good enough for demo)
 - 📊 Limited emergency history
+- 💊 Medication adherence statistics are basic
 
 ## Future Ideas
 
 - Mobile app for iOS and Android
 - Integration with real emergency services
-- Medication reminders
-- Health status check-ins
+- Advanced medication adherence analytics
+- Health status check-ins and vital signs tracking
 - Video calling during emergencies
-- Wearable device support
+- Wearable device support (smartwatches, fitness trackers)
+- AI-powered health pattern recognition
+- Integration with pharmacy systems for automatic refills
 
 ## Want to Contribute?
 
@@ -180,6 +231,29 @@ This is a learning project, so contributions are welcome!
 - **Frontend won't start?** Check if port 3000 is available
 - **Backend errors?** Check the `.env` file configuration
 - **Socket connection fails?** Make sure both servers are running
+- **Medication reminders not working?** Ensure the backend cron service is running
+
+## Testing the Medication Feature
+
+**Quick Test Steps:**
+1. Login as an elder
+2. Go to "💊 Medications" tab
+3. Add a test medication with time 2-3 minutes from now
+4. Wait for the reminder notification (15 minutes early in production, but you can test with immediate notifications)
+5. Click "Take" or "Miss" to test the tracking
+6. Login as a caregiver to see the alerts
+
+**Database Commands for Testing:**
+```sql
+-- View all medications
+SELECT * FROM medications;
+
+-- View today's medication logs
+SELECT * FROM medication_logs WHERE DATE(scheduled_time) = CURRENT_DATE;
+
+-- Check medication reminder service status
+-- Look for "Medication reminder service initialized" in backend logs
+```
 
 ## License
 This project is for educational purposes only - no specific license applies.

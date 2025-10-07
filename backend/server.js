@@ -11,6 +11,8 @@ const logger = require('./utils/logger');
 const authRoutes = require('./routes/auth');
 const emergencyRoutes = require('./routes/emergency');
 const userRoutes = require('./routes/user');
+const medicationRoutes = require('./routes/medication');
+const MedicationReminderService = require('./services/medicationReminderService');
 
 const app = express();
 const server = createServer(app);
@@ -18,7 +20,8 @@ const server = createServer(app);
 // Allow multiple origins for LAN access
 const allowedOrigins = [
   "http://localhost:3000",
-  "http://192.168.1.3:3000", // Your actual Wi-Fi IP
+  "http://192.168.1.3:3000", // Your home Wi-Fi IP
+  "http://192.168.20.177:3000", // Your current public Wi-Fi IP
   "http://172.21.224.1:3000", // WSL IP (if needed)
   process.env.FRONTEND_URL
 ].filter(Boolean);
@@ -61,6 +64,7 @@ app.set('io', io);
 app.use('/api/auth', authRoutes);
 app.use('/api/emergency', emergencyRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/medications', medicationRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -208,6 +212,10 @@ const HOST = process.env.HOST || '0.0.0.0'; // Listen on all interfaces
 
 server.listen(PORT, HOST, () => {
   logger.info(`Server running on ${HOST}:${PORT}`);
+  
+  // Initialize medication reminder service
+  const medicationService = new MedicationReminderService(io);
+  logger.info('Medication reminder service initialized');
 });
 
 module.exports = { app, server, io };
