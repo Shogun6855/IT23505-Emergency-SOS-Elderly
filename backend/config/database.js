@@ -4,8 +4,11 @@ const path = require('path');
 // Load environment variables from the project root
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
+// Database connection string from demo credentials
+const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:wTXRhREDHbxiaMRzsgdAoQVuSjYTTCSf@shinkansen.proxy.rlwy.net:55982/railway';
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: DATABASE_URL
 });
 
 // Test database connection

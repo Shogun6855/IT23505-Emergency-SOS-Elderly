@@ -7,6 +7,8 @@ const MedicationManagement = () => {
   const [todaysMeds, setTodaysMeds] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const toast = useToast();
 
   const [newMedication, setNewMedication] = useState({
@@ -45,10 +47,27 @@ const MedicationManagement = () => {
       const response = await medicationAPI.getTodaysMedications();
       setTodaysMeds(response.data.data);
       setLoading(false);
+      setLastUpdated(new Date());
     } catch (error) {
       toast.error('Failed to fetch today\'s medications');
       setLoading(false);
     }
+  };
+
+  const refreshTodaysMedications = async () => {
+    try {
+      setRefreshing(true);
+      await fetchTodaysMedications();
+      toast.success('Schedule refreshed');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const clearTodaysMedications = () => {
+    setTodaysMeds([]);
+    setLastUpdated(new Date());
+    toast.info("Today's schedule cleared locally");
   };
 
   const handleFrequencyChange = (frequency) => {
@@ -241,10 +260,30 @@ const MedicationManagement = () => {
       </div>
 
       {/* Today's Medications */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Today's Schedule ({new Date().toLocaleDateString()})
-        </h3>
+      <div className="bg-white rounded-xl shadow p-6 animate-fadeIn card-hover">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Today's Schedule ({new Date().toLocaleDateString()})
+          </h3>
+          <div className="flex items-center gap-3">
+            {lastUpdated && (
+              <span className="text-xs text-gray-500">Updated {lastUpdated.toLocaleTimeString()}</span>
+            )}
+            <button
+              onClick={clearTodaysMedications}
+              className="px-3 py-1 text-sm rounded-md border border-gray-200 hover:bg-gray-100"
+            >
+              Clear
+            </button>
+            <button
+              onClick={refreshTodaysMedications}
+              disabled={refreshing}
+              className={`px-3 py-1 text-sm rounded-md border border-gray-200 hover:bg-gray-100 ${refreshing ? 'opacity-60 cursor-not-allowed' : ''}`}
+            >
+              {refreshing ? 'Refreshing…' : 'Refresh'}
+            </button>
+          </div>
+        </div>
         
         {todaysMeds.length === 0 ? (
           <p className="text-gray-500 text-center py-4">No medications scheduled for today</p>
@@ -253,22 +292,22 @@ const MedicationManagement = () => {
             {todaysMeds.map((med) => (
               <div
                 key={med.id}
-                className={`flex items-center justify-between p-4 rounded-lg border-2 ${
+                className={`flex items-center justify-between p-4 rounded-xl border animate-fadeIn ${
                   med.status === 'taken'
-                    ? 'bg-green-50 border-green-200'
+                    ? 'bg-success-50 border-success-200'
                     : med.status === 'missed'
-                    ? 'bg-red-50 border-red-200'
-                    : 'bg-yellow-50 border-yellow-200'
+                    ? 'bg-emergency-50 border-emergency-200'
+                    : 'bg-warning-50 border-warning-200'
                 }`}
               >
                 <div className="flex-1">
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 rounded-full ${
                       med.status === 'taken'
-                        ? 'bg-green-500'
+                        ? 'bg-success-500'
                         : med.status === 'missed'
-                        ? 'bg-red-500'
-                        : 'bg-yellow-500'
+                        ? 'bg-emergency-500'
+                        : 'bg-warning-500'
                     }`}></div>
                     <div>
                       <h4 className="font-semibold text-gray-900">{med.name}</h4>
@@ -286,13 +325,13 @@ const MedicationManagement = () => {
                   <div className="flex space-x-2">
                     <button
                       onClick={() => markAsTaken(med.id)}
-                      className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                      className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition"
                     >
                       Take
                     </button>
                     <button
                       onClick={() => markAsMissed(med.id)}
-                      className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                      className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
                     >
                       Miss
                     </button>

@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import { ToastProvider } from './context/ToastContext';
+import { ChatbotProvider } from './context/ChatbotContext';
+import Chatbot from './components/ui/Chatbot';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import ElderDashboard from './components/Elder/ElderDashboard';
@@ -76,11 +78,14 @@ function App() {
     <AuthProvider>
       <SocketProvider>
         <ToastProvider>
-          <Router>
-            <div className="App">
-              <AppRoutes />
-            </div>
-          </Router>
+          <ChatbotProvider>
+            <Router>
+              <div className="App">
+                <AppRoutes />
+                <Chatbot />
+              </div>
+            </Router>
+          </ChatbotProvider>
         </ToastProvider>
       </SocketProvider>
     </AuthProvider>

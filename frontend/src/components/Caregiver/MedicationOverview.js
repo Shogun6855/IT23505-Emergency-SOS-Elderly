@@ -6,6 +6,17 @@ const MedicationOverview = ({ elders }) => {
   const { socket } = useSocket();
   const toast = useToast();
   const [medicationAlerts, setMedicationAlerts] = useState([]);
+  const [stats, setStats] = useState({ taken: 0, missed: 0, upcoming: 0, adherence: 0 });
+
+  const MAX_ALERTS = 20;
+
+  const recomputeStats = (alerts) => {
+    const taken = alerts.filter(a => a.type === 'taken').length;
+    const missed = alerts.filter(a => a.type === 'missed' || a.type === 'auto-missed').length;
+    const total = taken + missed;
+    const adherence = total > 0 ? Math.round((taken / total) * 100) : 0;
+    setStats({ taken, missed, upcoming: 0, adherence });
+  };
 
   useEffect(() => {
     if (!socket) return;
@@ -13,17 +24,35 @@ const MedicationOverview = ({ elders }) => {
     // Listen for medication events from elders
     socket.on('medication-taken', (data) => {
       toast.success(`✅ ${data.elderName} took their medication`, 5000);
+      setMedicationAlerts(prev => {
+        const next = [...prev, {
+          id: Date.now(),
+          type: 'taken',
+          elderName: data.elderName,
+          medication: data.medication,
+          timestamp: data.timestamp
+        }];
+        // Cap list size
+        const capped = next.slice(-MAX_ALERTS);
+        recomputeStats(capped);
+        return capped;
+      });
     });
 
     socket.on('medication-missed', (data) => {
       toast.error(`⚠️ ${data.elderName} missed their medication`, 8000);
-      setMedicationAlerts(prev => [...prev, {
-        id: Date.now(),
-        type: 'missed',
-        elderName: data.elderName,
-        medication: data.medication,
-        timestamp: data.timestamp
-      }]);
+      setMedicationAlerts(prev => {
+        const next = [...prev, {
+          id: Date.now(),
+          type: 'missed',
+          elderName: data.elderName,
+          medication: data.medication,
+          timestamp: data.timestamp
+        }];
+        const capped = next.slice(-MAX_ALERTS);
+        recomputeStats(capped);
+        return capped;
+      });
     });
 
     socket.on('medication-reminder-caregiver', (data) => {
@@ -32,14 +61,19 @@ const MedicationOverview = ({ elders }) => {
 
     socket.on('medication-auto-missed', (data) => {
       toast.error(`🚨 ${data.elderName} automatically missed their medication`, 10000);
-      setMedicationAlerts(prev => [...prev, {
-        id: Date.now(),
-        type: 'auto-missed',
-        elderName: data.elderName,
-        medicationId: data.medicationId,
-        scheduledTime: data.scheduledTime,
-        timestamp: data.timestamp
-      }]);
+      setMedicationAlerts(prev => {
+        const next = [...prev, {
+          id: Date.now(),
+          type: 'auto-missed',
+          elderName: data.elderName,
+          medicationId: data.medicationId,
+          scheduledTime: data.scheduledTime,
+          timestamp: data.timestamp
+        }];
+        const capped = next.slice(-MAX_ALERTS);
+        recomputeStats(capped);
+        return capped;
+      });
     });
 
     return () => {
@@ -51,11 +85,27 @@ const MedicationOverview = ({ elders }) => {
   }, [socket, toast]);
 
   const dismissAlert = (alertId) => {
-    setMedicationAlerts(prev => prev.filter(alert => alert.id !== alertId));
+    setMedicationAlerts(prev => {
+      const next = prev.filter(alert => alert.id !== alertId);
+      recomputeStats(next);
+      return next;
+    });
   };
 
   const formatTime = (timestamp) => {
     return new Date(timestamp).toLocaleString();
+  };
+
+  const clearAllAlerts = () => {
+    setMedicationAlerts([]);
+    recomputeStats([]);
+  };
+
+  const resetToday = () => {
+    if (window.confirm('Reset today\'s medication alerts and stats?')) {
+      setMedicationAlerts([]);
+      setStats({ taken: 0, missed: 0, upcoming: 0, adherence: 0 });
+    }
   };
 
   return (
@@ -77,8 +127,8 @@ const MedicationOverview = ({ elders }) => {
                   Last active: {elder.last_login ? new Date(elder.last_login).toLocaleDateString() : 'Never'}
                 </p>
                 <div className="mt-3 text-xs text-gray-500">
-                  <p>📊 Medication adherence: --</p>
-                  <p>💊 Active medications: --</p>
+                  <p>📊 Medication adherence: {stats.adherence}%</p>
+                  <p>💊 Taken/Missed today: {stats.taken}/{stats.missed}</p>
                   <p>⏰ Next scheduled: --</p>
                 </div>
               </div>
@@ -95,6 +145,14 @@ const MedicationOverview = ({ elders }) => {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Recent Medication Alerts
           </h3>
+          <div className="flex justify-end mb-3">
+            <button
+              onClick={clearAllAlerts}
+              className="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700"
+            >
+              Clear All
+            </button>
+          </div>
           <div className="space-y-3">
             {medicationAlerts.slice(-5).reverse().map((alert) => (
               <div
@@ -107,16 +165,15 @@ const MedicationOverview = ({ elders }) => {
               >
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
-                    <span className={`text-lg ${
-                      alert.type === 'missed' || alert.type === 'auto-missed' ? '⚠️' : '💊'
-                    }`}>
+                    <span className="text-lg">
+                      {alert.type === 'missed' || alert.type === 'auto-missed' ? '⚠️' : '💊'}
                     </span>
                     <div>
                       <p className="font-medium text-gray-900">
-                        {alert.elderName}
+                        {alert.elderName} {alert.medication?.name ? `• ${alert.medication.name}` : ''}
                       </p>
                       <p className="text-sm text-gray-600">
-                        {alert.type === 'auto-missed' ? 'Automatically missed medication' : 'Missed medication'}
+                        {alert.type === 'taken' ? 'Medication taken' : alert.type === 'auto-missed' ? 'Automatically missed medication' : 'Missed medication'}
                       </p>
                       <p className="text-xs text-gray-500">
                         {formatTime(alert.timestamp)}
@@ -138,24 +195,32 @@ const MedicationOverview = ({ elders }) => {
 
       {/* Medication Statistics Overview */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Today's Medication Overview
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Today's Medication Overview
+          </h3>
+          <button
+            onClick={resetToday}
+            className="px-3 py-1 text-sm bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-200"
+          >
+            Reset Today
+          </button>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">--</div>
+            <div className="text-2xl font-bold text-green-600">{stats.taken}</div>
             <div className="text-sm text-gray-600">Taken</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-red-600">--</div>
+            <div className="text-2xl font-bold text-red-600">{stats.missed}</div>
             <div className="text-sm text-gray-600">Missed</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-yellow-600">--</div>
+            <div className="text-2xl font-bold text-yellow-600">{stats.upcoming}</div>
             <div className="text-sm text-gray-600">Upcoming</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">--%</div>
+            <div className="text-2xl font-bold text-blue-600">{stats.adherence}%</div>
             <div className="text-sm text-gray-600">Adherence</div>
           </div>
         </div>

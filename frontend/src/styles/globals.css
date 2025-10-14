@@ -10,12 +10,31 @@
   }
   
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-muted-50 text-muted-900;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
 @layer components {
+  /* Simple animation utilities */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 220ms ease-out both;
+  }
+
+  .card-hover {
+    transition: box-shadow 150ms ease, transform 150ms ease;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  }
+
   /* Emergency button styles */
   .emergency-button {
     @apply relative overflow-hidden rounded-full transition-all duration-300 transform;
@@ -57,7 +76,7 @@
 
   /* Card styles */
   .card {
-    @apply bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden;
+    @apply bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden;
   }
 
   .card-header {
@@ -78,11 +97,11 @@
   }
 
   .btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
   }
 
   .btn-secondary {
-    @apply bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500;
+    @apply bg-muted-600 text-white hover:bg-muted-700 focus:ring-muted-500;
   }
 
   .btn-danger {
@@ -94,7 +113,7 @@
   }
 
   .btn-outline {
-    @apply border-2 border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500;
+    @apply border-2 border-muted-200 text-muted-700 hover:bg-muted-50 focus:ring-muted-500;
   }
 
   /* Status badges */
