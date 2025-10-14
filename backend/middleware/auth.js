@@ -14,7 +14,13 @@ const auth = (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, config.jwt.secret);
-    req.user = decoded;
+    // Fix: The JWT token contains userId, not id
+    req.user = {
+      id: decoded.userId,
+      ...decoded
+    };
+    console.log('Auth middleware - decoded token:', decoded);
+    console.log('Auth middleware - req.user:', req.user);
     next();
 
   } catch (error) {

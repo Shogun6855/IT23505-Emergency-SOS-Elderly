@@ -5,6 +5,11 @@ const logger = require('../utils/logger');
 const addMedication = async (req, res) => {
   try {
     const { name, dosage, frequency, timeSlots, instructions, startDate, endDate } = req.body;
+    
+    // Debug logging
+    console.log('req.user:', req.user);
+    console.log('req.user.id:', req.user?.id);
+    
     const userId = req.user.id;
 
     // Validate required fields

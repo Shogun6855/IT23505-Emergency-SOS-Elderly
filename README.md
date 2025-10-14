@@ -49,36 +49,99 @@ Think of this as a digital panic button for seniors. When they're in trouble, th
 
 ## Getting Started
 
-### What You Need
-- A computer with Node.js installed
-- PostgreSQL database (or use the Docker setup)
-- About 10 minutes to set everything up
+### Prerequisites
+- **Node.js**: Make sure you have Node.js (v14 or later) installed.
+- **npm**: Node Package Manager, comes with Node.js.
+- **PostgreSQL**: A running instance of PostgreSQL.
+- **Docker** (Optional): For an easier setup, you can use Docker and Docker Compose.
 
-### Quick Setup
+### Installation & Setup
 
+Follow these steps to get the project running on your local machine.
+
+**1. Clone the Repository**
 ```bash
-# 1. Get the code
-git clone <this-repository>
-cd emergency-sos-elders
-
-# 2. Install everything
-cd backend && npm install
-cd ../frontend && npm install
-
-# 3. Set up the database
-npm run setup-db
-
-# 4. Start the servers
-npm run dev    # This starts both backend and frontend
+git clone https://github.com/Shogun6855/IT23505-Emergency-SOS-Elderly.git
+cd IT23505-Emergency-SOS-Elderly
 ```
 
-Then visit `http://localhost:3000` and create your first account!
+**2. Backend Setup**
+The backend server runs on Node.js and connects to the PostgreSQL database.
 
-### Using Docker (Easier)
 ```bash
-docker-compose up
+# Navigate to the backend directory
+cd backend
+
+# Install dependencies
+npm install
+
+# Create a .env file from the example
+# (You'll need to configure your database connection string here)
+# DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
+cp .env.example .env
+
+# Run database migrations and seed initial data
+npm run migrate
+npm run seed
+
+# Start the backend server
+npm start
 ```
-That's it! Everything runs automatically.
+> The backend will be running at `http://localhost:5000`.
+
+**3. Frontend Setup**
+The frontend is a React application.
+
+```bash
+# Navigate to the frontend directory from the root
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start the frontend development server
+npm start
+```
+> The frontend will open automatically at `http://localhost:3000`.
+
+**4. Mobile App Setup (Expo)**
+The mobile app is built with React Native and Expo.
+
+```bash
+# Navigate to the mobile directory from the root
+cd mobile
+
+# Install dependencies
+npm install
+
+# Start the Expo development server
+npm start
+```
+> This will open the Expo developer tools in your browser. You can run the app on a simulator or scan the QR code with the Expo Go app on your phone.
+
+### All-in-One Development Server
+From the root directory, you can run both the frontend and backend concurrently for development.
+
+```bash
+# From the root project directory
+npm install # Installs root-level dependencies like 'concurrently'
+npm run dev
+```
+
+### Using Docker (The Easy Way)
+If you have Docker and Docker Compose installed, you can get everything running with a single command.
+
+```bash
+# From the root project directory
+docker-compose up --build
+```
+This command will:
+- Build the Docker images for the frontend, backend, and database.
+- Start all the services.
+- Automatically handle networking between containers.
+
+> The application will be available at `http://localhost:3000`.
+
 
 ## 💊 Medication Reminders Feature
 

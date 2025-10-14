@@ -21,7 +21,8 @@ const server = createServer(app);
 const allowedOrigins = [
   "http://localhost:3000",
   "http://192.168.1.3:3000", // Your home Wi-Fi IP
-  "http://192.168.20.177:3000", // Your current public Wi-Fi IP
+  "http://192.168.20.177:3000", // Your previous public Wi-Fi IP
+  "http://10.204.198.101:3000", // Your current network IP
   "http://172.21.224.1:3000", // WSL IP (if needed)
   process.env.FRONTEND_URL
 ].filter(Boolean);
