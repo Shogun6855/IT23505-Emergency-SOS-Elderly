@@ -19,8 +19,18 @@ const registerValidation = [
     .withMessage('Password must contain at least one lowercase letter, one uppercase letter, and one number'),
   
   body('phone')
-    .isMobilePhone()
-    .withMessage('Please provide a valid phone number'),
+    .notEmpty()
+    .withMessage('Phone number is required')
+    .custom((value) => {
+      // Remove all formatting characters
+      const cleaned = value.replace(/[\s\-\(\)\.]/g, '');
+      // Check if it's 7-15 digits, optionally starting with +
+      const phoneRegex = /^[\+]?[0-9]{7,15}$/;
+      if (!phoneRegex.test(cleaned)) {
+        throw new Error('Please provide a valid phone number (7-15 digits)');
+      }
+      return true;
+    }),
   
   body('role')
     .isIn(['elder', 'caregiver'])

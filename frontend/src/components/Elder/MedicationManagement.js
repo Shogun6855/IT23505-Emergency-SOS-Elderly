@@ -7,8 +7,6 @@ const MedicationManagement = () => {
   const [todaysMeds, setTodaysMeds] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState(null);
   const toast = useToast();
 
   const [newMedication, setNewMedication] = useState({
@@ -47,27 +45,10 @@ const MedicationManagement = () => {
       const response = await medicationAPI.getTodaysMedications();
       setTodaysMeds(response.data.data);
       setLoading(false);
-      setLastUpdated(new Date());
     } catch (error) {
       toast.error('Failed to fetch today\'s medications');
       setLoading(false);
     }
-  };
-
-  const refreshTodaysMedications = async () => {
-    try {
-      setRefreshing(true);
-      await fetchTodaysMedications();
-      toast.success('Schedule refreshed');
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  const clearTodaysMedications = () => {
-    setTodaysMeds([]);
-    setLastUpdated(new Date());
-    toast.info("Today's schedule cleared locally");
   };
 
   const handleFrequencyChange = (frequency) => {
@@ -260,30 +241,10 @@ const MedicationManagement = () => {
       </div>
 
       {/* Today's Medications */}
-      <div className="bg-white rounded-xl shadow p-6 animate-fadeIn card-hover">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Today's Schedule ({new Date().toLocaleDateString()})
-          </h3>
-          <div className="flex items-center gap-3">
-            {lastUpdated && (
-              <span className="text-xs text-gray-500">Updated {lastUpdated.toLocaleTimeString()}</span>
-            )}
-            <button
-              onClick={clearTodaysMedications}
-              className="px-3 py-1 text-sm rounded-md border border-gray-200 hover:bg-gray-100"
-            >
-              Clear
-            </button>
-            <button
-              onClick={refreshTodaysMedications}
-              disabled={refreshing}
-              className={`px-3 py-1 text-sm rounded-md border border-gray-200 hover:bg-gray-100 ${refreshing ? 'opacity-60 cursor-not-allowed' : ''}`}
-            >
-              {refreshing ? 'Refreshing…' : 'Refresh'}
-            </button>
-          </div>
-        </div>
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Today's Schedule ({new Date().toLocaleDateString()})
+        </h3>
         
         {todaysMeds.length === 0 ? (
           <p className="text-gray-500 text-center py-4">No medications scheduled for today</p>
@@ -292,22 +253,22 @@ const MedicationManagement = () => {
             {todaysMeds.map((med) => (
               <div
                 key={med.id}
-                className={`flex items-center justify-between p-4 rounded-xl border animate-fadeIn ${
+                className={`flex items-center justify-between p-4 rounded-lg border-2 ${
                   med.status === 'taken'
-                    ? 'bg-success-50 border-success-200'
+                    ? 'bg-green-50 border-green-200'
                     : med.status === 'missed'
-                    ? 'bg-emergency-50 border-emergency-200'
-                    : 'bg-warning-50 border-warning-200'
+                    ? 'bg-red-50 border-red-200'
+                    : 'bg-yellow-50 border-yellow-200'
                 }`}
               >
                 <div className="flex-1">
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 rounded-full ${
                       med.status === 'taken'
-                        ? 'bg-success-500'
+                        ? 'bg-green-500'
                         : med.status === 'missed'
-                        ? 'bg-emergency-500'
-                        : 'bg-warning-500'
+                        ? 'bg-red-500'
+                        : 'bg-yellow-500'
                     }`}></div>
                     <div>
                       <h4 className="font-semibold text-gray-900">{med.name}</h4>
@@ -321,35 +282,56 @@ const MedicationManagement = () => {
                   </div>
                 </div>
                 
-                {med.status === 'pending' && (
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => markAsTaken(med.id)}
-                      className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition"
-                    >
-                      Take
-                    </button>
-                    <button
-                      onClick={() => markAsMissed(med.id)}
-                      className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
-                    >
-                      Miss
-                    </button>
-                  </div>
-                )}
-                
-                {med.status !== 'pending' && (
-                  <span className={`text-sm font-medium ${
-                    med.status === 'taken' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {med.status === 'taken' ? '✓ Taken' : '✗ Missed'}
-                    {med.taken_at && (
-                      <span className="block text-xs text-gray-500">
-                        {new Date(med.taken_at).toLocaleTimeString()}
-                      </span>
-                    )}
-                  </span>
-                )}
+                <div className="flex items-center space-x-2">
+                  {med.status === 'pending' && (
+                    <>
+                      <button
+                        onClick={() => markAsTaken(med.id)}
+                        className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors"
+                      >
+                        Take
+                      </button>
+                      <button
+                        onClick={() => markAsMissed(med.id)}
+                        className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors"
+                      >
+                        Miss
+                      </button>
+                    </>
+                  )}
+                  
+                  {med.status === 'missed' && (
+                    <>
+                      <span className="text-sm font-medium text-red-600">✗ Missed</span>
+                      <button
+                        onClick={() => markAsTaken(med.id)}
+                        className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors"
+                        title="Take medication late"
+                      >
+                        Take Now
+                      </button>
+                    </>
+                  )}
+                  
+                  {med.status === 'taken' && (
+                    <div className="flex flex-col items-end">
+                      <span className="text-sm font-medium text-green-600">✓ Taken</span>
+                      {med.taken_at && (
+                        <span className="text-xs text-gray-500">
+                          {new Date(med.taken_at).toLocaleTimeString()}
+                        </span>
+                      )}
+                      {/* Allow re-taking if needed */}
+                      <button
+                        onClick={() => markAsTaken(med.id)}
+                        className="mt-1 bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700 transition-colors"
+                        title="Mark as taken again"
+                      >
+                        Re-take
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>

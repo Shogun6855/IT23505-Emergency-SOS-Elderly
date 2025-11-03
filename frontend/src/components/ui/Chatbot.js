@@ -54,8 +54,8 @@ export default function Chatbot() {
     const now = Date.now();
     const userMsg = { id: `u-${now}-${item.id}`, role: 'user', text: item.q };
     const botMsg = { id: `b-${now}-${item.id}`, role: 'bot', text: item.a };
-    // Append Q->A pair to current session thread
-    setMessages([...messages, userMsg, botMsg]);
+    // Append to existing messages to show conversation history
+    setMessages(prev => [...prev, userMsg, botMsg]);
   };
 
   return (

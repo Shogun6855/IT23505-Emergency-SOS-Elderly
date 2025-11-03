@@ -38,10 +38,12 @@ const CaregiverDashboard = () => {
     try {
       const response = await userAPI.getElders();
       if (response.data.success) {
-        setElders(response.data.elders);
+        setElders(response.data.elders || []);
+        console.log('Fetched elders:', response.data.elders);
       }
     } catch (error) {
       console.error('Failed to fetch elders:', error);
+      toast.error('Failed to load elders under your care', 5000);
     }
   };
 
@@ -64,6 +66,13 @@ const CaregiverDashboard = () => {
   useEffect(() => {
     fetchActiveEmergencies();
     fetchElders();
+    
+    // Refresh elders list every 30 seconds
+    const interval = setInterval(() => {
+      fetchElders();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   // Listen for new emergency alerts via socket
@@ -80,12 +89,30 @@ const CaregiverDashboard = () => {
           `🚨 NEW EMERGENCY: ${emergencyData.elderName}`,
           10000 // Don't auto-dismiss too quickly for emergencies
         );
+        
+        // Refresh elders list to update emergency counts
+        fetchElders();
+      };
+
+      const handleElderCheckIn = (checkInData) => {
+        console.log('Elder check-in received:', checkInData);
+        
+        // Show success toast
+        toast.success(
+          `✅ ${checkInData.elderName} has checked in - all is okay!`,
+          5000
+        );
+        
+        // Refresh elders list
+        fetchElders();
       };
 
       socket.on('new-emergency', handleNewEmergency);
+      socket.on('elder-check-in', handleElderCheckIn);
 
       return () => {
         socket.off('new-emergency', handleNewEmergency);
+        socket.off('elder-check-in', handleElderCheckIn);
       };
     }
   }, [socket, connected]);
@@ -232,19 +259,70 @@ const CaregiverDashboard = () => {
           {/* Elder List */}
           <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
             <div className="px-4 py-5 sm:p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                People Under Your Care
-              </h2>
-              
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">👥</div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No Elders Assigned
-                </h3>
-                <p className="text-gray-500">
-                  Elders need to add you as their caregiver to appear here.
-                </p>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  People Under Your Care
+                </h2>
+                <button
+                  onClick={fetchElders}
+                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  🔄 Refresh
+                </button>
               </div>
+              
+              {elders.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">👥</div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    No Elders Assigned
+                  </h3>
+                  <p className="text-gray-500">
+                    Elders need to add you as their caregiver to appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {elders.map((elder) => (
+                    <div
+                      key={elder.id}
+                      className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg text-gray-900">{elder.name}</h3>
+                          <div className="mt-2 space-y-1">
+                            <p className="text-sm text-gray-600">📧 {elder.email}</p>
+                            {elder.phone && (
+                              <p className="text-sm text-gray-600">📞 {elder.phone}</p>
+                            )}
+                            {elder.address && (
+                              <p className="text-sm text-gray-600">📍 {elder.address}</p>
+                            )}
+                            {elder.relationship && (
+                              <p className="text-sm text-blue-600">Relationship: {elder.relationship}</p>
+                            )}
+                            {elder.active_emergencies > 0 && (
+                              <p className="text-sm text-red-600 font-medium">
+                                🚨 {elder.active_emergencies} Active Emergency{elder.active_emergencies !== 1 ? 's' : ''}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="ml-4 text-right">
+                          <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            elder.active_emergencies > 0 
+                              ? 'bg-red-100 text-red-800' 
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {elder.active_emergencies > 0 ? '⚠️ Alert' : '✅ Safe'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

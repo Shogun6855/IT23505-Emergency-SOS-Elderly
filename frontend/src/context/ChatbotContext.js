@@ -6,10 +6,15 @@ export const ChatbotProvider = ({ children }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
 
+  // Clear messages on page refresh (component mount)
+  React.useEffect(() => {
+    setMessages([]);
+  }, []);
+
   const toggle = () => {
     setIsOpen(prev => !prev);
   };
-  const open = () => { setIsOpen(true); };
+  const open = () => setIsOpen(true);
   const close = () => setIsOpen(false);
 
   const value = useMemo(() => ({ isOpen, toggle, open, close, messages, setMessages }), [isOpen, messages]);

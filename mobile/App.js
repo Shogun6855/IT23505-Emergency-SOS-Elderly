@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Alert, Platform } from 'react-native';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
+import * as Battery from 'expo-battery';
 import SOSButton from './components/SOSButton';
 import LocationTracker from './components/LocationTracker';
 
@@ -18,6 +19,8 @@ export default function App() {
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [isEmergencyActive, setIsEmergencyActive] = useState(false);
+  const [batteryLevel, setBatteryLevel] = useState(null);
+  const [batteryAlertSent, setBatteryAlertSent] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -36,8 +39,70 @@ export default function App() {
 
       let location = await Location.getCurrentPositionAsync({});
       setLocation(location);
+
+      // Battery monitoring
+      if (Platform.OS !== 'web') {
+        // Get initial battery level
+        const level = await Battery.getBatteryLevelAsync();
+        setBatteryLevel(Math.round(level * 100));
+
+        // Monitor battery level changes
+        const subscription = Battery.addBatteryLevelListener(({ batteryLevel }) => {
+          const percentage = Math.round(batteryLevel * 100);
+          setBatteryLevel(percentage);
+          checkBatteryLevel(percentage);
+        });
+
+        // Check battery level every 30 seconds
+        const batteryCheckInterval = setInterval(async () => {
+          const level = await Battery.getBatteryLevelAsync();
+          const percentage = Math.round(level * 100);
+          setBatteryLevel(percentage);
+          checkBatteryLevel(percentage);
+        }, 30000);
+
+        return () => {
+          subscription.remove();
+          clearInterval(batteryCheckInterval);
+        };
+      }
     })();
   }, []);
+
+  const checkBatteryLevel = async (level) => {
+    // If battery is 15% or less and we haven't sent an alert yet
+    if (level <= 15 && !batteryAlertSent) {
+      setBatteryAlertSent(true);
+      
+      try {
+        // TODO: Send battery alert to backend API
+        // await batteryAPI.reportBatteryLevel(level, Platform.OS);
+        console.log(`Low battery alert: ${level}%`);
+        
+        // Show local notification
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '🔋 Low Battery',
+            body: `Your battery is at ${level}%. Caregivers will be notified.`,
+            sound: true,
+          },
+          trigger: null,
+        });
+
+        // Reset alert flag after 1 hour (to allow new alerts if battery continues to drop)
+        setTimeout(() => {
+          setBatteryAlertSent(false);
+        }, 60 * 60 * 1000);
+      } catch (error) {
+        console.error('Error reporting battery level:', error);
+      }
+    }
+    
+    // Reset alert flag if battery goes above 20%
+    if (level > 20) {
+      setBatteryAlertSent(false);
+    }
+  };
 
   const handleEmergency = async () => {
     if (isEmergencyActive) {
@@ -123,6 +188,22 @@ export default function App() {
 
       <View style={styles.locationInfo}>
         <LocationTracker location={location} />
+        {batteryLevel !== null && (
+          <View style={styles.batteryInfo}>
+            <Text style={styles.batteryLabel}>Battery Level:</Text>
+            <Text style={[
+              styles.batteryLevel,
+              batteryLevel <= 15 && styles.batteryLow
+            ]}>
+              {batteryLevel}%
+            </Text>
+            {batteryLevel <= 15 && (
+              <Text style={styles.batteryWarning}>
+                ⚠️ Low battery alert sent to caregivers
+              </Text>
+            )}
+          </View>
+        )}
       </View>
 
       <View style={styles.footer}>
@@ -204,5 +285,31 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6c757d',
     textAlign: 'center',
+  },
+  batteryInfo: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  batteryLabel: {
+    fontSize: 14,
+    color: '#6c757d',
+    marginBottom: 5,
+  },
+  batteryLevel: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#28a745',
+  },
+  batteryLow: {
+    color: '#dc3545',
+  },
+  batteryWarning: {
+    fontSize: 12,
+    color: '#dc3545',
+    marginTop: 5,
+    fontStyle: 'italic',
   },
 });

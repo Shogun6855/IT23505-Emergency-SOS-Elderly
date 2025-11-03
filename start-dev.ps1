@@ -8,3 +8,4 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd frontend; npm 
 
 Write-Host "Both servers are starting in separate windows..." -ForegroundColor Green
 Read-Host "Press Enter to continue"
+

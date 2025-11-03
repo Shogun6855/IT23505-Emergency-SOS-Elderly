@@ -9,3 +9,4 @@ start "Frontend Server" cmd /k "cd frontend && npm start"
 
 echo Both servers are starting in separate windows...
 pause
+

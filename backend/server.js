@@ -12,7 +12,15 @@ const authRoutes = require('./routes/auth');
 const emergencyRoutes = require('./routes/emergency');
 const userRoutes = require('./routes/user');
 const medicationRoutes = require('./routes/medication');
+const checkInRoutes = require('./routes/checkin');
+const batteryRoutes = require('./routes/battery');
+const medicalProfileRoutes = require('./routes/medicalProfile');
+const appointmentRoutes = require('./routes/appointments');
+const activityRoutes = require('./routes/activities');
+const reportRoutes = require('./routes/reports');
 const MedicationReminderService = require('./services/medicationReminderService');
+const CheckInReminderService = require('./services/checkInReminderService');
+const AppointmentReminderService = require('./services/appointmentReminderService');
 
 const app = express();
 const server = createServer(app);
@@ -66,6 +74,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/emergency', emergencyRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/medications', medicationRoutes);
+app.use('/api/checkin', checkInRoutes);
+app.use('/api/battery', batteryRoutes);
+app.use('/api/medical-profile', medicalProfileRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/activities', activityRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -214,9 +228,19 @@ const HOST = process.env.HOST || '0.0.0.0'; // Listen on all interfaces
 server.listen(PORT, HOST, () => {
   logger.info(`Server running on ${HOST}:${PORT}`);
   
-  // Initialize medication reminder service
+  // Initialize medication reminder service (starts automatically in constructor)
   const medicationService = new MedicationReminderService(io);
   logger.info('Medication reminder service initialized');
+  
+  // Initialize check-in reminder service
+  const checkInService = new CheckInReminderService(io);
+  checkInService.start();
+  logger.info('Check-in reminder service initialized');
+  
+  // Initialize appointment reminder service
+  const appointmentService = new AppointmentReminderService(io);
+  appointmentService.start();
+  logger.info('Appointment reminder service initialized');
 });
 
 module.exports = { app, server, io };

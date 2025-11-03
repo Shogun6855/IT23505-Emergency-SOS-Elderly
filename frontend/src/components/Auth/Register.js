@@ -38,8 +38,10 @@ const Register = () => {
       
       case 'phone':
         if (!value.trim()) return 'Phone number is required';
-        const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-        if (!phoneRegex.test(value.replace(/[\s\-\(\)]/g, ''))) return 'Please provide a valid phone number';
+        // More flexible phone validation - accepts various formats
+        const cleanedPhone = value.replace(/[\s\-\(\)\.]/g, '');
+        const phoneRegex = /^[\+]?[0-9]{7,15}$/;
+        if (!phoneRegex.test(cleanedPhone)) return 'Please provide a valid phone number (7-15 digits, +optional)';
         return '';
       
       case 'password':
@@ -135,13 +137,17 @@ const Register = () => {
       }
     } catch (error) {
       console.error('Registration error:', error);
-      if (error.response?.data?.errors) {
-        const errorMessages = error.response.data.errors.map(err => err.msg).join(', ');
-        toast.error(`Registration failed: ${errorMessages}`, 7000);
+      if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        // Get the first error message
+        const firstError = error.response.data.errors[0];
+        const errorMsg = firstError.msg || firstError;
+        toast.error(`Registration failed: ${errorMsg}`, 8000);
       } else if (error.response?.data?.message) {
-        toast.error(`Registration failed: ${error.response.data.message}`, 7000);
+        toast.error(`Registration failed: ${error.response.data.message}`, 8000);
+      } else if (error.message) {
+        toast.error(`Registration failed: ${error.message}`, 8000);
       } else {
-        toast.error('Registration failed. Please check your connection and try again.', 7000);
+        toast.error('Registration failed. Please check your connection and try again.', 8000);
       }
     } finally {
       setLoading(false);
@@ -238,7 +244,7 @@ const Register = () => {
                   ? 'border-red-500 placeholder-red-300' 
                   : 'border-gray-300 placeholder-gray-500'
               } text-gray-900`}
-              placeholder="+1234567890 or 1234567890"
+              placeholder="+1234567890 or 1234567890 (7-15 digits)"
               value={formData.phone}
               onChange={handleChange}
               onBlur={handleBlur}
@@ -246,7 +252,7 @@ const Register = () => {
             {errors.phone && touched.phone && (
               <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
             )}
-            <p className="mt-1 text-xs text-gray-500">Enter a valid mobile phone number (with or without country code)</p>
+            <p className="mt-1 text-xs text-gray-500">Enter 7-15 digits. Can include + for country code, spaces, dashes, or parentheses for formatting</p>
           </div>
 
           <div>

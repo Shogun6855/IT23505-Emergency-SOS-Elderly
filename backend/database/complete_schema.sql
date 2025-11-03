@@ -1,5 +1,11 @@
 -- Emergency SOS System - Complete Database Schema
 -- Drop existing tables if they exist (in correct order due to foreign key constraints)
+DROP TABLE IF EXISTS health_vitals CASCADE;
+DROP TABLE IF EXISTS activities CASCADE;
+DROP TABLE IF EXISTS appointments CASCADE;
+DROP TABLE IF EXISTS medical_profiles CASCADE;
+DROP TABLE IF EXISTS battery_alerts CASCADE;
+DROP TABLE IF EXISTS check_ins CASCADE;
 DROP TABLE IF EXISTS medication_logs CASCADE;
 DROP TABLE IF EXISTS medications CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
@@ -109,6 +115,106 @@ CREATE INDEX idx_medication_logs_medication_id ON medication_logs(medication_id)
 CREATE INDEX idx_medication_logs_user_id ON medication_logs(user_id);
 CREATE INDEX idx_medication_logs_status ON medication_logs(status);
 CREATE INDEX idx_medication_logs_scheduled_time ON medication_logs(scheduled_time);
+
+-- Create check_ins table for "I'm Okay" feature
+CREATE TABLE check_ins (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    check_in_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    next_reminder_time TIMESTAMP NOT NULL,
+    reminder_hours INTEGER NOT NULL DEFAULT 6,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create battery_alerts table for low battery notifications
+CREATE TABLE battery_alerts (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    battery_level INTEGER NOT NULL,
+    device_info TEXT,
+    alert_sent BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Additional indexes
+CREATE INDEX idx_check_ins_user_id ON check_ins(user_id);
+CREATE INDEX idx_check_ins_next_reminder_time ON check_ins(next_reminder_time);
+CREATE INDEX idx_battery_alerts_user_id ON battery_alerts(user_id);
+CREATE INDEX idx_battery_alerts_alert_sent ON battery_alerts(alert_sent);
+
+-- Create medical_profiles table
+CREATE TABLE medical_profiles (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    allergies TEXT,
+    conditions TEXT,
+    current_medications TEXT,
+    blood_type VARCHAR(10),
+    doctor_name VARCHAR(255),
+    doctor_phone VARCHAR(20),
+    doctor_email VARCHAR(255),
+    insurance_provider VARCHAR(255),
+    insurance_number VARCHAR(100),
+    emergency_notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id)
+);
+
+-- Create appointments table
+CREATE TABLE appointments (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    appointment_type VARCHAR(100),
+    doctor_name VARCHAR(255),
+    location TEXT,
+    appointment_date TIMESTAMP NOT NULL,
+    reminder_sent_24h BOOLEAN DEFAULT FALSE,
+    reminder_sent_1h BOOLEAN DEFAULT FALSE,
+    completed BOOLEAN DEFAULT FALSE,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create activities table
+CREATE TABLE activities (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    activity_type VARCHAR(50) NOT NULL,
+    description TEXT,
+    mood VARCHAR(20),
+    energy_level INTEGER CHECK (energy_level >= 1 AND energy_level <= 10),
+    notes TEXT,
+    activity_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create health_vitals table
+CREATE TABLE health_vitals (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    vital_type VARCHAR(50) NOT NULL,
+    value DECIMAL(10, 2) NOT NULL,
+    unit VARCHAR(20),
+    measured_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Additional indexes for new tables
+CREATE INDEX idx_medical_profiles_user_id ON medical_profiles(user_id);
+CREATE INDEX idx_appointments_user_id ON appointments(user_id);
+CREATE INDEX idx_appointments_date ON appointments(appointment_date);
+CREATE INDEX idx_appointments_completed ON appointments(completed);
+CREATE INDEX idx_activities_user_id ON activities(user_id);
+CREATE INDEX idx_activities_date ON activities(activity_date);
+CREATE INDEX idx_activities_type ON activities(activity_type);
+CREATE INDEX idx_health_vitals_user_id ON health_vitals(user_id);
+CREATE INDEX idx_health_vitals_type ON health_vitals(vital_type);
+CREATE INDEX idx_health_vitals_measured_at ON health_vitals(measured_at);
 
 -- Insert demo data
 -- Demo users (passwords are bcrypt hashed for 'demo123')

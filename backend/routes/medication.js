@@ -8,7 +8,8 @@ const {
   deleteMedication,
   getTodaysMedications,
   markMedicationTaken,
-  markMedicationMissed
+  markMedicationMissed,
+  getCaregiverMedications
 } = require('../controllers/medicationController');
 
 // All routes require authentication
@@ -24,5 +25,8 @@ router.delete('/:id', deleteMedication);
 router.get('/today', getTodaysMedications);
 router.put('/logs/:logId/taken', markMedicationTaken);
 router.put('/logs/:logId/missed', markMedicationMissed);
+
+// Caregiver medication overview
+router.get('/caregiver/overview', getCaregiverMedications);
 
 module.exports = router;

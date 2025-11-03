@@ -9,3 +9,4 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "❌ Database connection test failed!" -ForegroundColor Red
     Write-Host "💡 Make sure you have Node.js and the pg package installed." -ForegroundColor Cyan
 }
+

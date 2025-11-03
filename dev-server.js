@@ -38,3 +38,4 @@ frontend.on('error', (err) => {
 
 console.log('✅ Both servers are running!');
 console.log('Press Ctrl+C to stop both servers.');
+

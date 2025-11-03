@@ -69,4 +69,44 @@ export const medicationAPI = {
   getTodaysMedications: () => api.get('/medications/today'),
   markMedicationTaken: (logId, notes) => api.put(`/medications/logs/${logId}/taken`, { notes }),
   markMedicationMissed: (logId, notes) => api.put(`/medications/logs/${logId}/missed`, { notes }),
+  getCaregiverMedications: () => api.get('/medications/caregiver/overview'),
+};
+
+// Check-in API functions
+export const checkInAPI = {
+  checkIn: (reminderHours = 6) => api.post('/checkin', { reminderHours }),
+  getLastCheckIn: () => api.get('/checkin'),
+};
+
+// Battery API functions
+export const batteryAPI = {
+  reportBatteryLevel: (batteryLevel, deviceInfo) => api.post('/battery', { batteryLevel, deviceInfo }),
+};
+
+// Medical Profile API functions
+export const medicalProfileAPI = {
+  getProfile: () => api.get('/medical-profile'),
+  updateProfile: (profileData) => api.put('/medical-profile', profileData),
+  getElderProfile: (elderId) => api.get(`/medical-profile/elder/${elderId}`),
+};
+
+// Appointment API functions
+export const appointmentAPI = {
+  getAppointments: (params) => api.get('/appointments', { params }),
+  addAppointment: (appointmentData) => api.post('/appointments', appointmentData),
+  updateAppointment: (id, updates) => api.put(`/appointments/${id}`, updates),
+  deleteAppointment: (id) => api.delete(`/appointments/${id}`),
+};
+
+// Activity API functions
+export const activityAPI = {
+  logActivity: (activityData) => api.post('/activities', activityData),
+  getActivities: (params) => api.get('/activities', { params }),
+  getStats: (params) => api.get('/activities/stats', { params }),
+};
+
+// Report API functions
+export const reportAPI = {
+  getMedicationReport: (params) => api.get('/reports/medication', { params }),
+  getElderMedicationReport: (elderId, params) => api.get(`/reports/medication/elder/${elderId}`, { params }),
 };

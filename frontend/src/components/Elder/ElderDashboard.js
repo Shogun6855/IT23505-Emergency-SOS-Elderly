@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useSocket } from '../../context/SocketContext';
 import { useActiveUsers } from '../../hooks/useActiveUsers';
-import { emergencyAPI } from '../../services/api';
+import { emergencyAPI, checkInAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import MedicationManagement from './MedicationManagement';
 import MedicationNotifications from './MedicationNotifications';
+import MedicationReports from './MedicationReports';
+import AssignCaregiver from './AssignCaregiver';
+import MedicalProfile from './MedicalProfile';
+import Appointments from './Appointments';
+import ActivityLog from './ActivityLog';
 
 const ElderDashboard = () => {
   const { user, logout } = useAuth();
@@ -14,6 +19,9 @@ const ElderDashboard = () => {
   const toast = useToast();
   const [emergencyInProgress, setEmergencyInProgress] = useState(false);
   const [activeTab, setActiveTab] = useState('emergency');
+  const [checkInLoading, setCheckInLoading] = useState(false);
+  const [lastCheckIn, setLastCheckIn] = useState(null);
+  const [hoursSinceCheckIn, setHoursSinceCheckIn] = useState(0);
 
   const handleEmergencyTrigger = async () => {
     if (emergencyInProgress) return;
@@ -77,6 +85,59 @@ const ElderDashboard = () => {
     }
   };
 
+  // Load last check-in
+  useEffect(() => {
+    loadLastCheckIn();
+  }, []);
+
+  // Update hours since check-in
+  useEffect(() => {
+    if (!lastCheckIn) return;
+    
+    const updateHours = () => {
+      const now = new Date();
+      const lastCheckInDate = new Date(lastCheckIn.check_in_time);
+      const hours = Math.floor((now - lastCheckInDate) / (1000 * 60 * 60));
+      setHoursSinceCheckIn(hours);
+    };
+
+    updateHours();
+    const interval = setInterval(updateHours, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, [lastCheckIn]);
+
+  const loadLastCheckIn = async () => {
+    try {
+      const response = await checkInAPI.getLastCheckIn();
+      if (response.data.success && response.data.checkIn) {
+        setLastCheckIn(response.data.checkIn);
+        const now = new Date();
+        const lastCheckInDate = new Date(response.data.checkIn.check_in_time);
+        const hours = Math.floor((now - lastCheckInDate) / (1000 * 60 * 60));
+        setHoursSinceCheckIn(hours);
+      }
+    } catch (error) {
+      console.error('Failed to load check-in:', error);
+    }
+  };
+
+  const handleCheckIn = async () => {
+    setCheckInLoading(true);
+    try {
+      const response = await checkInAPI.checkIn(6); // 6 hours reminder
+      if (response.data.success) {
+        toast.success('✅ Check-in recorded! Caregivers will be notified if you don\'t check in within 6 hours.', 5000);
+        loadLastCheckIn();
+      }
+    } catch (error) {
+      toast.error('Failed to record check-in. Please try again.');
+      console.error('Check-in error:', error);
+    } finally {
+      setCheckInLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -127,6 +188,56 @@ const ElderDashboard = () => {
                 }`}
               >
                 💊 Medications
+              </button>
+              <button
+                onClick={() => setActiveTab('caregivers')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'caregivers'
+                    ? 'border-green-500 text-green-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                👥 Caregivers
+              </button>
+              <button
+                onClick={() => setActiveTab('medical')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'medical'
+                    ? 'border-purple-500 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                🏥 Medical Profile
+              </button>
+              <button
+                onClick={() => setActiveTab('appointments')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'appointments'
+                    ? 'border-indigo-500 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                📅 Appointments
+              </button>
+              <button
+                onClick={() => setActiveTab('activity')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'activity'
+                    ? 'border-orange-500 text-orange-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                📊 Activity
+              </button>
+              <button
+                onClick={() => setActiveTab('reports')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'reports'
+                    ? 'border-teal-500 text-teal-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                📈 Reports
               </button>
             </nav>
           </div>
@@ -194,6 +305,78 @@ const ElderDashboard = () => {
                     <p className="text-yellow-800 text-sm">
                       <span className="font-bold">ℹ️ Notice:</span> No caregivers are currently online. 
                       Emergency notifications will still be sent via SMS and email.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Caregivers Quick Access */}
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 overflow-hidden shadow-lg rounded-lg mb-6">
+            <div className="px-4 py-5 sm:p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 flex items-center">
+                    <span className="text-2xl mr-2">👥</span>
+                    Manage Your Caregivers
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Add caregivers to receive emergency alerts and notifications. They'll be notified when you trigger SOS or need assistance.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('caregivers')}
+                    className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
+                  >
+                    <span className="mr-2">+</span>
+                    Add or Manage Caregivers
+                  </button>
+                </div>
+                <div className="ml-4 text-center">
+                  <div className="text-3xl font-bold text-green-600">
+                    {activeUsers.activeCaregivers || 0}
+                  </div>
+                  <div className="text-sm text-gray-600">Caregivers Online</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* I'm Okay Check-in Section */}
+          <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
+            <div className="px-4 py-5 sm:p-6">
+              <div className="text-center">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  I'm Okay Check-in
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Let your caregivers know you're doing well. If you don't check in within 6 hours, they'll be automatically notified.
+                </p>
+                <button
+                  onClick={handleCheckIn}
+                  disabled={checkInLoading}
+                  className={`
+                    px-6 py-3 rounded-lg font-medium text-white
+                    transition-all duration-200 transform hover:scale-105 active:scale-95
+                    ${checkInLoading 
+                      ? 'bg-gray-400 cursor-wait' 
+                      : 'bg-green-600 hover:bg-green-700 shadow-md hover:shadow-lg'
+                    }
+                  `}
+                >
+                  {checkInLoading ? 'Recording...' : "✓ I'm Okay"}
+                </button>
+                {lastCheckIn && (
+                  <div className="mt-4 text-sm text-gray-600">
+                    <p>Last check-in: {new Date(lastCheckIn.check_in_time).toLocaleString()}</p>
+                    <p className="mt-1">
+                      {hoursSinceCheckIn < 1 
+                        ? 'Checked in less than an hour ago' 
+                        : `Checked in ${hoursSinceCheckIn} hour${hoursSinceCheckIn !== 1 ? 's' : ''} ago`
+                      }
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Next reminder: {new Date(lastCheckIn.next_reminder_time).toLocaleString()}
                     </p>
                   </div>
                 )}
@@ -300,6 +483,31 @@ const ElderDashboard = () => {
           {/* Medications Tab */}
           {activeTab === 'medications' && (
             <MedicationManagement />
+          )}
+
+          {/* Caregivers Tab */}
+          {activeTab === 'caregivers' && (
+            <AssignCaregiver />
+          )}
+
+          {/* Medical Profile Tab */}
+          {activeTab === 'medical' && (
+            <MedicalProfile />
+          )}
+
+          {/* Appointments Tab */}
+          {activeTab === 'appointments' && (
+            <Appointments />
+          )}
+
+          {/* Activity Log Tab */}
+          {activeTab === 'activity' && (
+            <ActivityLog />
+          )}
+
+          {/* Reports Tab */}
+          {activeTab === 'reports' && (
+            <MedicationReports />
           )}
         </div>
       </main>
