@@ -125,11 +125,29 @@ exports.addCaregiver = async (req, res) => {
 
     // Check if relationship already exists
     const existingResult = await db.query(
-      'SELECT id FROM user_caregivers WHERE elder_id = $1 AND caregiver_id = $2',
+      'SELECT id, is_active FROM user_caregivers WHERE elder_id = $1 AND caregiver_id = $2',
       [elderId, caregiverId]
     );
 
     if (existingResult.rows.length > 0) {
+      const existing = existingResult.rows[0];
+      
+      // If the relationship exists but is inactive, reactivate it
+      if (!existing.is_active) {
+        await db.query(
+          'UPDATE user_caregivers SET is_active = true, relationship = $1, created_at = NOW() WHERE id = $2',
+          [relationship, existing.id]
+        );
+        
+        logger.info(`Caregiver ${caregiverId} reactivated for elder ${elderId}`);
+        
+        return res.json({
+          success: true,
+          message: 'Caregiver added successfully'
+        });
+      }
+      
+      // If already active, return error
       return res.status(400).json({
         success: false,
         message: 'This caregiver is already added'

@@ -4,10 +4,10 @@ const logger = require('../utils/logger');
 
 let client;
 
-if (config.twilio.accountSid && config.twilio.authToken) {
+if (config.twilio.accountSid && config.twilio.authToken && config.twilio.accountSid.startsWith('AC')) {
   client = twilio(config.twilio.accountSid, config.twilio.authToken);
 } else {
-  logger.warn('Twilio credentials not configured. SMS functionality will be disabled.');
+  logger.warn('Twilio credentials not configured or invalid. SMS functionality will be disabled.');
 }
 
 const sendEmergencySMS = async ({ to, elderName, location, time }) => {

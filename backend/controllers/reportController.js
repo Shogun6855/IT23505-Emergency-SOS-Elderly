@@ -1,5 +1,5 @@
-const db = require('./config/database');
-const logger = require('./utils/logger');
+const pool = require('../config/database');
+const logger = require('../utils/logger');
 
 exports.getMedicationReport = async (req, res) => {
   try {

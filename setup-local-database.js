@@ -6,9 +6,9 @@ const path = require('path');
 const LOCAL_DB_CONFIG = {
   user: 'postgres',
   host: 'localhost',
-  database: 'postgres', // Connect to default postgres database first
-  password: '1234',
-  port: 5432,
+  database: 'emergency_sos', // Connect to default postgres database first
+  password: 'Revanth2005',
+  port: 5433,
 };
 
 const TARGET_DB = 'emergency_sos';

@@ -15,13 +15,17 @@ const AssignCaregiver = () => {
 
   useEffect(() => {
     loadCaregivers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadCaregivers = async () => {
     try {
       setLoading(true);
+      console.log('Loading caregivers...');
       const response = await userAPI.getCaregivers();
+      console.log('Caregivers response:', response.data);
       if (response.data.success) {
+        console.log('Caregivers found:', response.data.caregivers);
         setCaregivers(response.data.caregivers);
       }
     } catch (error) {
